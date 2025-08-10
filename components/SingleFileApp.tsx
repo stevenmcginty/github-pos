@@ -4,6 +4,7 @@ import { Sale, SaleItem, CartItem, Product, Customer, PaymentMethod, OrderType, 
 import { dbError } from '../firebase';
 import { shareReceipt } from '../utils/receipts';
 import { calculateAvailablePoints } from '../utils/loyalty';
+import { createDojoPaymentIntent, createDojoTerminalSession, getDojoTerminalSessionStatus } from '../utils/dojo';
 
 // --- Hooks ---
 import { useAuth } from '../hooks/useAuth';
@@ -145,6 +146,13 @@ const AppContent = () => {
   const [customGiftCardModalOpen, setCustomGiftCardModalOpen] = useState(false);
   const [shareableGiftCardModalState, setShareableGiftCardModalState] = useState<{ isOpen: boolean, data: any }>({ isOpen: false, data: null });
   const [postSaleGiftCardChoiceModalState, setPostSaleGiftCardChoiceModalState] = useState<{ isOpen: boolean, sale: Sale | null }>({ isOpen: false, sale: null });
+  const [isDojoPaymentInProgress, setIsDojoPaymentInProgress] = useState(false);
+  const [dojoPaymentStatus, setDojoPaymentStatus] = useState('');
+
+  const DOJO_API_KEY = '559565e8-83dd-484b-941a-e1b2de202eef';
+  const DOJO_TERMINAL_ID = '36724345';
+  const DOJO_SOFTWARE_HOUSE_ID = '111413519823315';
+  const DOJO_RESELLER_ID = '111413519823315';
   
   const handleOpenScannerForLinking = () => {
     setQrScannerState({
@@ -240,100 +248,137 @@ const AppContent = () => {
     setExtrasSelectionModal({ isOpen: false, forItemInstanceId: null });
   };
   
-  const handleConfirmSale = () => {
+  const handleConfirmSale = async () => {
     modalHook.confirmSale.close();
-    
+
     if (!syncManager || !staffInfo) {
-        alert("Sync manager or staff info not available. Cannot complete sale.");
-        return;
+      alert("Sync manager or staff info not available. Cannot complete sale.");
+      return;
     }
-    
+
     const { totals, cart, orderType, paymentMethod, discount, tableName, customerId, giftCardAmountApplied } = cartHook.getSaleData();
-    const finalCart = cart.filter(item => item.quantity > 0);
 
-    const convertCartItemsToSaleItems = (items: CartItem[], currentOrderType: OrderType): SaleItem[] => {
-        return items.map(cartItem => {
-            const saleItem: SaleItem = {
-                id: cartItem.id, name: cartItem.name, priceEatIn: cartItem.priceEatIn, priceTakeAway: cartItem.priceTakeAway,
-                vatRateEatIn: cartItem.vatRateEatIn, vatRateTakeAway: cartItem.vatRateTakeAway, category: cartItem.category,
-                quantity: cartItem.quantity, priceAtSale: currentOrderType === OrderType.EatIn ? cartItem.priceEatIn : cartItem.priceTakeAway,
-                notes: cartItem.notes, loyaltyPoints: cartItem.loyaltyPoints, pointsToRedeem: cartItem.pointsToRedeem,
-                isGiftCard: cartItem.isGiftCard, isRedeemable: cartItem.isRedeemable, isRedeemed: cartItem.isRedeemed,
-                linkedItems: cartItem.linkedItems ? convertCartItemsToSaleItems(cartItem.linkedItems, currentOrderType) : undefined,
-            };
-            return saleItem;
-        });
-    };
+    if (paymentMethod === PaymentMethod.Card) {
+      setIsDojoPaymentInProgress(true);
+      setDojoPaymentStatus('Creating payment intent...');
 
-    const saleItems: SaleItem[] = convertCartItemsToSaleItems(finalCart, orderType);
+      try {
+        const paymentIntent = await createDojoPaymentIntent(DOJO_API_KEY, totals.remainingTotal, `Order at ${new Date().toISOString()}`);
+        setDojoPaymentStatus('Payment intent created. Creating terminal session...');
 
-    let pointsEarned = 0;
-    let pointsSpent = 0;
-    
-    finalCart.forEach(item => {
-        if (item.isRedeemed) {
-            pointsSpent += (item.pointsToRedeem || 0) * item.quantity;
-        } else if (!item.isGiftCard) {
-            pointsEarned += (item.loyaltyPoints || 0) * item.quantity;
-        }
-    });
+        const terminalSession = await createDojoTerminalSession(DOJO_API_KEY, DOJO_TERMINAL_ID, paymentIntent.id, DOJO_SOFTWARE_HOUSE_ID, DOJO_RESELLER_ID);
+        setDojoPaymentStatus('Terminal session created. Waiting for payment...');
 
-    const sale: Sale = {
-        id: crypto.randomUUID(), date: new Date().toISOString(), items: saleItems, total: totals.remainingTotal,
-        totalVat: totals.totalVat, orderType, paymentMethod, discount: discount || undefined, staffId: staffInfo.staffId,
-        staffName: staffInfo.staffName, tableName: tableName || undefined, customerId: customerId || undefined,
-        pointsEarned: pointsEarned > 0 ? pointsEarned : undefined, pointsSpent: pointsSpent > 0 ? pointsSpent : undefined,
-        giftCardAmountUsed: giftCardAmountApplied > 0 ? giftCardAmountApplied : undefined,
-    };
-    
-    syncManager.saveSale(sale);
-
-    if (customerId) {
-        const customer = customers.find(c => c.id === customerId);
-        if (customer) {
-            const pointTransactions: PointTransaction[] = [];
-            let pointsChange = 0;
-            if (pointsEarned > 0) {
-                pointsChange += pointsEarned;
-                pointTransactions.push({ id: crypto.randomUUID(), date: sale.date, change: pointsEarned, reason: "Points from purchase", saleId: sale.id });
-            }
-            if (pointsSpent > 0) {
-                pointsChange -= pointsSpent;
-                pointTransactions.push({ id: crypto.randomUUID(), date: sale.date, change: -pointsSpent, reason: "Redeemed items", saleId: sale.id });
-            }
-            const updatedCustomer = {
-                ...customer,
-                totalLoyaltyPoints: (customer.totalLoyaltyPoints || 0) + pointsChange,
-                giftCardBalance: (customer.giftCardBalance || 0) - giftCardAmountApplied,
-                pointsHistory: [...(customer.pointsHistory || []), ...pointTransactions],
-            };
-            syncManager.saveCustomer(updatedCustomer);
-        }
-    }
-
-    const giftCardPurchase = sale.items.find(item => item.isGiftCard);
-    if (giftCardPurchase) {
-      if (customerId) {
-        const customer = customers.find(c => c.id === customerId);
-        if (customer) {
-          const newBalance = (customer.giftCardBalance || 0) + giftCardPurchase.priceAtSale;
-          syncManager.patchItem('customers', customerId, { giftCardBalance: newBalance });
-          setShareableGiftCardModalState({ isOpen: true, data: { type: 'top-up', amount: giftCardPurchase.priceAtSale, customer }});
-        }
-      } else {
-        const newCard: UnclaimedGiftCard = {
-          id: `gc-${crypto.randomUUID()}`, amount: giftCardPurchase.priceAtSale, createdAt: new Date().toISOString(),
-          creatingSaleId: sale.id, isRedeemed: false,
+        const poll = async () => {
+          const statusResult = await getDojoTerminalSessionStatus(DOJO_API_KEY, terminalSession.id, DOJO_SOFTWARE_HOUSE_ID, DOJO_RESELLER_ID);
+          setDojoPaymentStatus(`Payment status: ${statusResult.status}`);
+          if (statusResult.status === 'Captured') {
+            setIsDojoPaymentInProgress(false);
+            setDojoPaymentStatus('Payment successful!');
+            completeSale();
+          } else if (statusResult.status === 'Failed' || statusResult.status === 'Expired' || statusResult.status === 'Canceled') {
+            setIsDojoPaymentInProgress(false);
+            setDojoPaymentStatus(`Payment failed with status: ${statusResult.status}`);
+          } else {
+            setTimeout(poll, 2000); // Poll every 2 seconds
+          }
         };
-        syncManager.saveItem('unclaimedGiftCards', newCard);
-        setShareableGiftCardModalState({ isOpen: true, data: { type: 'physical-card', card: newCard }});
+        poll();
+      } catch (error) {
+        setIsDojoPaymentInProgress(false);
+        setDojoPaymentStatus(`An error occurred: ${error.message}`);
       }
     } else {
-        modalHook.receipt.view(sale);
+      completeSale();
     }
 
-    cartHook.clearCart();
-    setCategoryPath([]);
+    const completeSale = () => {
+      const finalCart = cart.filter(item => item.quantity > 0);
+
+      const convertCartItemsToSaleItems = (items: CartItem[], currentOrderType: OrderType): SaleItem[] => {
+          return items.map(cartItem => {
+              const saleItem: SaleItem = {
+                  id: cartItem.id, name: cartItem.name, priceEatIn: cartItem.priceEatIn, priceTakeAway: cartItem.priceTakeAway,
+                  vatRateEatIn: cartItem.vatRateEatIn, vatRateTakeAway: cartItem.vatRateTakeAway, category: cartItem.category,
+                  quantity: cartItem.quantity, priceAtSale: currentOrderType === OrderType.EatIn ? cartItem.priceEatIn : cartItem.priceTakeAway,
+                  notes: cartItem.notes, loyaltyPoints: cartItem.loyaltyPoints, pointsToRedeem: cartItem.pointsToRedeem,
+                  isGiftCard: cartItem.isGiftCard, isRedeemable: cartItem.isRedeemable, isRedeemed: cartItem.isRedeemed,
+                  linkedItems: cartItem.linkedItems ? convertCartItemsToSaleItems(cartItem.linkedItems, currentOrderType) : undefined,
+              };
+              return saleItem;
+          });
+      };
+
+      const saleItems: SaleItem[] = convertCartItemsToSaleItems(finalCart, orderType);
+
+      let pointsEarned = 0;
+      let pointsSpent = 0;
+
+      finalCart.forEach(item => {
+          if (item.isRedeemed) {
+              pointsSpent += (item.pointsToRedeem || 0) * item.quantity;
+          } else if (!item.isGiftCard) {
+              pointsEarned += (item.loyaltyPoints || 0) * item.quantity;
+          }
+      });
+
+      const sale: Sale = {
+          id: crypto.randomUUID(), date: new Date().toISOString(), items: saleItems, total: totals.remainingTotal,
+          totalVat: totals.totalVat, orderType, paymentMethod, discount: discount || undefined, staffId: staffInfo.staffId,
+          staffName: staffInfo.staffName, tableName: tableName || undefined, customerId: customerId || undefined,
+          pointsEarned: pointsEarned > 0 ? pointsEarned : undefined, pointsSpent: pointsSpent > 0 ? pointsSpent : undefined,
+          giftCardAmountUsed: giftCardAmountApplied > 0 ? giftCardAmountApplied : undefined,
+      };
+
+      syncManager.saveSale(sale);
+
+      if (customerId) {
+          const customer = customers.find(c => c.id === customerId);
+          if (customer) {
+              const pointTransactions: PointTransaction[] = [];
+              let pointsChange = 0;
+              if (pointsEarned > 0) {
+                  pointsChange += pointsEarned;
+                  pointTransactions.push({ id: crypto.randomUUID(), date: sale.date, change: pointsEarned, reason: "Points from purchase", saleId: sale.id });
+              }
+              if (pointsSpent > 0) {
+                  pointsChange -= pointsSpent;
+                  pointTransactions.push({ id: crypto.randomUUID(), date: sale.date, change: -pointsSpent, reason: "Redeemed items", saleId: sale.id });
+              }
+              const updatedCustomer = {
+                  ...customer,
+                  totalLoyaltyPoints: (customer.totalLoyaltyPoints || 0) + pointsChange,
+                  giftCardBalance: (customer.giftCardBalance || 0) - giftCardAmountApplied,
+                  pointsHistory: [...(customer.pointsHistory || []), ...pointTransactions],
+              };
+              syncManager.saveCustomer(updatedCustomer);
+          }
+      }
+
+      const giftCardPurchase = sale.items.find(item => item.isGiftCard);
+      if (giftCardPurchase) {
+        if (customerId) {
+          const customer = customers.find(c => c.id === customerId);
+          if (customer) {
+            const newBalance = (customer.giftCardBalance || 0) + giftCardPurchase.priceAtSale;
+            syncManager.patchItem('customers', customerId, { giftCardBalance: newBalance });
+            setShareableGiftCardModalState({ isOpen: true, data: { type: 'top-up', amount: giftCardPurchase.priceAtSale, customer }});
+          }
+        } else {
+          const newCard: UnclaimedGiftCard = {
+            id: `gc-${crypto.randomUUID()}`, amount: giftCardPurchase.priceAtSale, createdAt: new Date().toISOString(),
+            creatingSaleId: sale.id, isRedeemed: false,
+          };
+          syncManager.saveItem('unclaimedGiftCards', newCard);
+          setShareableGiftCardModalState({ isOpen: true, data: { type: 'physical-card', card: newCard }});
+        }
+      } else {
+          modalHook.receipt.view(sale);
+      }
+
+      cartHook.clearCart();
+      setCategoryPath([]);
+    }
   };
 
   const allCategoryPaths = useMemo(() => [...new Set(products.map(p => p.category).filter(Boolean))].sort(), [products]);
@@ -499,6 +544,14 @@ const AppContent = () => {
           isOpen={shareableGiftCardModalState.isOpen} onClose={() => setShareableGiftCardModalState({ isOpen: false, data: null })}
           cardData={shareableGiftCardModalState.data}
       />
+      {isDojoPaymentInProgress && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+          <div className="bg-bg-panel rounded-lg shadow-2xl p-8 w-full max-w-sm text-text-primary">
+            <h2 className="text-2xl font-bold text-accent">Dojo Payment In Progress</h2>
+            <p className="mt-4">{dojoPaymentStatus}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
