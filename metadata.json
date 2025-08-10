@@ -1,0 +1,9 @@
+{
+  "name": "Coffee Shop POS",
+  "description": "Gdpr pwa 08.08.25",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "prompt": ""
+}
