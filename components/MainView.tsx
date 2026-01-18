@@ -226,29 +226,29 @@ export const MainView = ({ cartHook, modalHook, syncDataHook, categoryPath, onNa
   const isGiftCardCategory = categoryPath.join('/').toLowerCase() === 'gift cards';
 
   return (
-    <main className="relative flex-1 flex flex-col bg-bg-main p-4 lg:p-6 pb-28 lg:pb-6 min-h-0">
+    <main className="relative flex-1 flex flex-col bg-[#13131d] p-4 lg:p-6 pb-28 lg:pb-6 min-h-0">
       <header className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
           <button onClick={() => {
             triggerHapticFeedback();
             navModal.open();
-          }} className="p-2 rounded-md hover:bg-bg-panel">
-            <Icon name="menu" className="w-6 h-6 text-text-primary" />
+          }} className="p-2 rounded-xl hover:bg-white/5 border border-white/10 transition-all active:scale-95">
+            <Icon name="menu" className="w-6 h-6 text-white" />
           </button>
           <Breadcrumb path={categoryPath} onNavigate={onNavigate} />
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
             <button
                 onClick={() => {
                     triggerHapticFeedback();
                     setAIOrderModalOpen(true);
                 }}
-                className="relative w-12 h-12 rounded-full p-0.5 flex items-center justify-center bg-gradient-to-br from-blue-500 via-teal-400 to-orange-400 shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className="relative w-12 h-12 rounded-xl p-0.5 flex items-center justify-center bg-gradient-to-br from-blue-500 via-teal-400 to-orange-400 shadow-lg hover:shadow-xl hover:scale-105 transition-all active:scale-95"
                 title="AI Order Entry"
                 aria-label="Start AI Order Entry"
             >
-                <div className="w-full h-full bg-bg-panel rounded-full flex items-center justify-center">
-                    <span className="font-bold text-lg text-transparent bg-clip-text bg-gradient-to-br from-blue-400 via-teal-300 to-orange-300">
+                <div className="w-full h-full bg-[#1a1a2e] rounded-[10px] flex items-center justify-center">
+                    <span className="font-black text-lg text-transparent bg-clip-text bg-gradient-to-br from-blue-400 via-teal-300 to-orange-300">
                         AI
                     </span>
                 </div>
@@ -256,7 +256,7 @@ export const MainView = ({ cartHook, modalHook, syncDataHook, categoryPath, onNa
             <button onClick={() => {
               triggerHapticFeedback();
               productModal.openNew();
-            }} className="hidden sm:flex items-center gap-2 bg-bg-panel text-text-primary font-semibold py-2 px-4 rounded-lg shadow hover:bg-opacity-80 transition-colors">
+            }} className="hidden sm:flex items-center gap-2 bg-[#1a1a2e] border border-white/10 text-white font-black uppercase tracking-wider text-xs py-3 px-4 rounded-xl shadow hover:brightness-110 transition-all active:scale-95">
                 <Icon name="plus" className="w-5 h-5" />
                 <span>Add Product</span>
             </button>
@@ -281,22 +281,24 @@ export const MainView = ({ cartHook, modalHook, syncDataHook, categoryPath, onNa
             {isGiftCardCategory ? (
               <>
                 {giftCardAmounts.map((amount, index) => (
-                  <button 
+                  <button
                     key={amount}
                     onClick={() => addGiftCardToCart(amount)}
-                    className="h-36 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center p-4 text-white cursor-pointer"
+                    className="h-36 rounded-xl shadow-lg border border-white/10 hover:scale-[1.02] hover:brightness-110 transition-all active:scale-95 flex flex-col items-center justify-center p-4 text-white cursor-pointer relative overflow-hidden"
                     style={{ backgroundColor: categoryColors[index % categoryColors.length] }}
                   >
-                    <Icon name="star" className="w-8 h-8 mb-2 opacity-70"/>
-                    <span className="text-3xl font-bold">£{amount}</span>
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+                    <Icon name="star" className="w-8 h-8 mb-2 opacity-80 drop-shadow-lg relative z-10"/>
+                    <span className="text-3xl font-mono font-black relative z-10 drop-shadow-md">£{amount}</span>
                   </button>
                 ))}
-                <button 
+                <button
                   onClick={onOpenCustomGiftCard}
-                  className="h-36 rounded-lg shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center p-4 text-white cursor-pointer bg-gray-600"
+                  className="h-36 rounded-xl shadow-lg border border-white/10 hover:scale-[1.02] hover:brightness-110 transition-all active:scale-95 flex flex-col items-center justify-center p-4 text-white cursor-pointer bg-[#1e1e2d] relative overflow-hidden"
                 >
-                  <Icon name="edit" className="w-8 h-8 mb-2 opacity-70"/>
-                  <span className="text-xl font-bold">Custom Amount</span>
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+                  <Icon name="edit" className="w-8 h-8 mb-2 opacity-70 relative z-10"/>
+                  <span className="text-lg font-black uppercase tracking-tight relative z-10">Custom Amount</span>
                 </button>
               </>
             ) : (

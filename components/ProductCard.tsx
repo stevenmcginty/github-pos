@@ -44,7 +44,7 @@ const ProductCard = ({ product, onAddToCart, orderType }: ProductCardProps) => {
         onAddToCart(product);
       }}
       aria-label={`Add ${product.name} to cart`}
-      className="group rounded-lg flex flex-col h-36 cursor-pointer overflow-hidden relative"
+      className="group rounded-xl flex flex-col h-36 cursor-pointer overflow-hidden relative border border-white/10 hover:scale-[1.02] hover:brightness-110 transition-all active:scale-95 shadow-lg"
       style={{
         backgroundColor: cardColor,
         color: contrastTextColor,
@@ -64,10 +64,13 @@ const ProductCard = ({ product, onAddToCart, orderType }: ProductCardProps) => {
         aria-hidden="true"
       />
 
-      <div className="flex-grow flex flex-col">
-        <div 
-            className="drag-handle absolute top-1 right-1 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-            style={{ backgroundColor: 'rgba(0,0,0,0.2)', color: contrastTextColor }}
+      {/* Glass overlay for depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+      <div className="flex-grow flex flex-col relative z-10">
+        <div
+            className="drag-handle absolute top-1 right-1 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: contrastTextColor }}
             title={`Reorder ${product.name}`}
         >
             <Icon name="dragHandle" className="w-4 h-4" />
@@ -75,18 +78,18 @@ const ProductCard = ({ product, onAddToCart, orderType }: ProductCardProps) => {
 
         {/* Product Name */}
         <div className="p-3 pl-8 flex-grow flex items-center">
-          <h3 className="font-bold text-base leading-tight">{product.name}</h3>
+          <h3 className="font-black uppercase tracking-tight text-base leading-tight drop-shadow-md">{product.name}</h3>
         </div>
-        
+
         {/* Price Section */}
-        <div className="p-3 price-section" style={{ borderTop: `1px solid rgba(255, 255, 255, 0.2)`}}>
+        <div className="p-3 price-section bg-black/20 backdrop-blur-sm" style={{ borderTop: `1px solid rgba(255, 255, 255, 0.1)`}}>
           <div className="flex justify-between items-center text-sm">
-            <span className={`font-semibold transition-colors ${isEatInActive ? '' : 'opacity-70'}`}>Eat In</span>
-            <span className={`font-bold transition-colors ${isEatInActive ? '' : 'opacity-70'}`}>£{(product.priceEatIn ?? 0).toFixed(2)}</span>
+            <span className={`font-bold uppercase text-[10px] tracking-widest transition-colors ${isEatInActive ? '' : 'opacity-50'}`}>Eat In</span>
+            <span className={`font-mono font-black transition-colors ${isEatInActive ? '' : 'opacity-50'}`}>£{(product.priceEatIn ?? 0).toFixed(2)}</span>
           </div>
           <div className="flex justify-between items-center text-sm mt-1">
-            <span className={`font-semibold transition-colors ${!isEatInActive ? '' : 'opacity-70'}`}>Take Away</span>
-            <span className={`font-bold transition-colors ${!isEatInActive ? '' : 'opacity-70'}`}>£{(product.priceTakeAway ?? 0).toFixed(2)}</span>
+            <span className={`font-bold uppercase text-[10px] tracking-widest transition-colors ${!isEatInActive ? '' : 'opacity-50'}`}>Take Away</span>
+            <span className={`font-mono font-black transition-colors ${!isEatInActive ? '' : 'opacity-50'}`}>£{(product.priceTakeAway ?? 0).toFixed(2)}</span>
           </div>
         </div>
       </div>

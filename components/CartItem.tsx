@@ -40,54 +40,54 @@ const CartItem = ({ item, onQuantityChange, onRemove, onAddNote, onAddExtraReque
   const canRedeem = customer && item.isRedeemable && item.pointsToRedeem && availablePoints >= item.pointsToRedeem;
 
   return (
-    <div className={`py-3 border-b border-border-color/50 ${item.isRedeemed ? 'bg-green-500/10' : ''}`}>
+    <div className={`py-3 px-3 my-1 rounded-xl border border-white/10 bg-[#161625] ${item.isRedeemed ? 'bg-emerald-500/10 border-emerald-500/30' : ''}`}>
         <div className="flex items-start justify-between">
             <div className="flex-grow">
-                <p className="font-semibold text-text-primary">{item.name}</p>
+                <p className="font-black uppercase tracking-tight text-white">{item.name}</p>
                 {item.notes && <p className="text-sm text-blue-400 italic pl-2 mt-1">↳ {item.notes}</p>}
-                <p className="text-sm text-text-secondary mt-1">£{currentPrice.toFixed(2)} each</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mt-1">£{currentPrice.toFixed(2)} each</p>
                 {item.isRedeemed && (
-                    <div className="text-xs font-bold text-green-400 pl-2 mt-1 flex items-center gap-1">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400 pl-2 mt-1 flex items-center gap-1">
                         <Icon name="star" className="w-3 h-3" />
-                        <span>REDEEMED with { (item.pointsToRedeem || 0) } points</span>
+                        <span>Redeemed with { (item.pointsToRedeem || 0) } pts</span>
                     </div>
                 )}
             </div>
-            <div className="flex items-center gap-4 ml-4">
-                <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-3 ml-4">
+                <div className="flex items-center gap-1">
                     {item.isRedeemed ? (
-                        <button onClick={() => { triggerHapticFeedback(); unRedeemItem(item.instanceId); }} className="bg-red-500/20 p-1.5 rounded-md hover:bg-red-500/40" title="Undo Redemption">
-                            <Icon name="xCircle" className="w-5 h-5 text-red-400" />
+                        <button onClick={() => { triggerHapticFeedback(); unRedeemItem(item.instanceId); }} className="bg-red-500/20 p-2 rounded-lg hover:bg-red-500/40 transition-all active:scale-95" title="Undo Redemption">
+                            <Icon name="xCircle" className="w-4 h-4 text-red-400" />
                         </button>
                     ) : item.isRedeemable && item.pointsToRedeem && customer ? (
-                        <button 
-                            onClick={() => { triggerHapticFeedback(); redeemItem(item.instanceId); }} 
+                        <button
+                            onClick={() => { triggerHapticFeedback(); redeemItem(item.instanceId); }}
                             disabled={!canRedeem}
-                            className="bg-green-500/20 p-1.5 rounded-md hover:bg-green-500/40 disabled:opacity-50 disabled:cursor-not-allowed" 
+                            className="bg-emerald-500/20 p-2 rounded-lg hover:bg-emerald-500/40 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             title={canRedeem ? `Redeem for ${item.pointsToRedeem} points` : `Not enough points (${availablePoints} / ${item.pointsToRedeem})`}
                         >
-                            <Icon name="star" className="w-5 h-5 text-green-400" />
+                            <Icon name="star" className="w-4 h-4 text-emerald-400" />
                         </button>
                     ) : (
-                         <button onClick={() => { triggerHapticFeedback(); onAddExtraRequest(); }} className="bg-white/5 p-1.5 rounded-md hover:bg-white/10" title="Add Extra" disabled={item.isRedeemed}>
+                         <button onClick={() => { triggerHapticFeedback(); onAddExtraRequest(); }} className="bg-white/5 p-2 rounded-lg hover:bg-white/10 transition-all active:scale-95" title="Add Extra" disabled={item.isRedeemed}>
                             <Icon name="link" className={`w-4 h-4 ${item.isRedeemed ? 'text-cyan-400/50' : 'text-cyan-400'}`}/>
                         </button>
                     )}
-                    <button onClick={() => { triggerHapticFeedback(); onAddNote(item.instanceId, item.notes); }} className="bg-white/5 p-1.5 rounded-md hover:bg-white/10" title={item.notes ? "Edit Note" : "Add Note"}>
+                    <button onClick={() => { triggerHapticFeedback(); onAddNote(item.instanceId, item.notes); }} className="bg-white/5 p-2 rounded-lg hover:bg-white/10 transition-all active:scale-95" title={item.notes ? "Edit Note" : "Add Note"}>
                         <Icon name="edit" className="w-4 h-4 text-blue-400"/>
                     </button>
-                    <button onClick={() => { triggerHapticFeedback(); onRemove(item.instanceId); }} className="bg-white/5 p-1.5 rounded-md hover:bg-white/10" title="Remove Item">
-                        <Icon name="trash" className="w-4 h-4 text-red-500"/>
+                    <button onClick={() => { triggerHapticFeedback(); onRemove(item.instanceId); }} className="bg-white/5 p-2 rounded-lg hover:bg-white/10 transition-all active:scale-95" title="Remove Item">
+                        <Icon name="trash" className="w-4 h-4 text-red-400"/>
                     </button>
                 </div>
-                <div className="flex items-center border border-text-secondary/50 rounded-md">
-                    <button onClick={handleDecrease} className="px-2 py-1 text-text-secondary hover:bg-bg-panel rounded-l-md" disabled={item.isRedeemed}>-</button>
-                    <span className="px-3 py-1 font-bold text-text-primary">{item.quantity}</span>
-                    <button onClick={handleIncrease} className="px-2 py-1 text-text-secondary hover:bg-bg-panel rounded-r-md" disabled={item.isRedeemed}>+</button>
+                <div className="flex items-center bg-[#13131d] border border-white/10 rounded-xl overflow-hidden">
+                    <button onClick={handleDecrease} className="px-3 py-2 text-white/50 hover:text-white hover:bg-white/5 transition-all active:scale-95 font-black" disabled={item.isRedeemed}>-</button>
+                    <span className="px-3 py-2 font-mono font-black text-white min-w-[2.5rem] text-center">{item.quantity}</span>
+                    <button onClick={handleIncrease} className="px-3 py-2 text-white/50 hover:text-white hover:bg-white/5 transition-all active:scale-95 font-black" disabled={item.isRedeemed}>+</button>
                 </div>
-                <p className="w-20 text-right font-bold text-lg text-text-primary">
+                <p className="w-20 text-right font-mono font-black text-lg text-white">
                     {item.isRedeemed ? (
-                        <span className="text-green-400">FREE</span>
+                        <span className="text-emerald-400">FREE</span>
                     ) : (
                         `£${((currentPrice + totalLinkedPrice) * item.quantity).toFixed(2)}`
                     )}
@@ -95,16 +95,16 @@ const CartItem = ({ item, onQuantityChange, onRemove, onAddNote, onAddExtraReque
             </div>
         </div>
         {item.linkedItems && item.linkedItems.length > 0 && (
-            <div className="pl-2 mt-1 space-y-1">
+            <div className="pl-3 mt-2 pt-2 border-t border-white/5 space-y-1">
                 {item.linkedItems.map(extra => {
                     const extraPrice = orderType === OrderType.EatIn ? extra.priceEatIn : extra.priceTakeAway;
                     return (
                         <div key={extra.instanceId} className="flex items-center justify-between text-sm">
-                             <p className="text-green-400 italic">↳ {extra.name}</p>
+                             <p className="text-teal-400 font-medium">↳ {extra.name}</p>
                             <div className="flex items-center gap-2">
-                                <span className="text-green-400 italic">+ £{extraPrice.toFixed(2)}</span>
-                                <button onClick={() => { triggerHapticFeedback(); onRemoveExtra(item.instanceId, extra.instanceId); }} className="text-red-500 hover:text-red-700 p-0.5" title="Remove Extra" disabled={item.isRedeemed}>
-                                    <Icon name="close" className="w-4 h-4"/>
+                                <span className="text-teal-400 font-mono font-bold">+ £{extraPrice.toFixed(2)}</span>
+                                <button onClick={() => { triggerHapticFeedback(); onRemoveExtra(item.instanceId, extra.instanceId); }} className="text-red-400 hover:text-red-300 p-1 rounded-lg hover:bg-red-500/20 transition-all active:scale-95" title="Remove Extra" disabled={item.isRedeemed}>
+                                    <Icon name="close" className="w-3 h-3"/>
                                 </button>
                             </div>
                         </div>

@@ -32,7 +32,7 @@ const CategoryTile = ({ name, onClick, color }: CategoryTileProps) => {
         onClick();
       }}
       aria-label={`Open category ${name}`}
-      className="group rounded-lg flex flex-col h-36 cursor-pointer overflow-hidden relative"
+      className="group rounded-xl flex flex-col h-36 cursor-pointer overflow-hidden relative border border-white/10 hover:scale-[1.02] hover:brightness-110 transition-all active:scale-95 shadow-lg"
       style={{
         backgroundColor: color,
         color: contrastTextColor,
@@ -52,22 +52,26 @@ const CategoryTile = ({ name, onClick, color }: CategoryTileProps) => {
         style={{ backgroundColor: color }}
         aria-hidden="true"
       />
-      <div className="flex-grow flex flex-col items-center justify-center p-4 text-center">
+
+      {/* Glass overlay for depth */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+      <div className="flex-grow flex flex-col items-center justify-center p-4 text-center relative z-10">
         {!isCustomItem && (
           <div
-            className="drag-handle absolute top-1 right-1 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
-            style={{ backgroundColor: 'rgba(0,0,0,0.2)', color: contrastTextColor }}
+            className="drag-handle absolute top-1 right-1 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: contrastTextColor }}
             title={`Reorder ${name}`}
           >
             <Icon name="dragHandle" className="w-4 h-4" />
           </div>
         )}
-        
+
         {(isCustomItem || isGiftCard) && (
-            <Icon name={iconName} className="w-10 h-10 mb-2" style={{ color: contrastTextColor }} />
+            <Icon name={iconName} className="w-10 h-10 mb-2 drop-shadow-lg" style={{ color: contrastTextColor }} />
         )}
-        
-        <h3 className="font-bold text-xl relative z-10">{name}</h3>
+
+        <h3 className="font-black italic uppercase tracking-tight text-xl drop-shadow-md">{name}</h3>
       </div>
     </div>
   );
