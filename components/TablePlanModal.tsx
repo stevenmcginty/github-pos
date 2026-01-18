@@ -188,7 +188,7 @@ const TablePlanModal = ({ isOpen, onClose, tables, openTabs: syncedOpenTabs, car
             ) : (
                 <div className="text-center py-20">
                     <p className="text-lg text-text-secondary">No tables have been set up.</p>
-                    <p className="text-sm text-text-secondary/70">Go to Admin Dashboard > Manage Tables to add some.</p>
+                    <p className="text-sm text-text-secondary/70">Go to Admin Dashboard &gt; Manage Tables to add some.</p>
                 </div>
             )}
         </div>
